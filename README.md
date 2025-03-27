@@ -21,7 +21,7 @@ This project provides a Model Control Protocol (MCP) server for interacting with
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/pan-os-mcp-server.git
+   git clone https://github.com/edoscars/pan-os-mcp-server.git
    cd pan-os-mcp-server
    ```
 
