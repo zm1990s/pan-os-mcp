@@ -1,6 +1,6 @@
 # PAN-OS MCP Server
 
-This project provides a Model Control Protocol (MCP) server for interacting with Palo Alto Networks firewalls using the XML API. It allows you to use ChatGPT/Claude to manage and configure your PAN-OS devices through natural language.
+This project provides a Model Control Protocol (MCP) server for interacting with Palo Alto Networks firewalls using the XML API. It allows you to use Claude or other compatible tools to manage and configure your PAN-OS devices through natural language.
 
 ## Features
 
@@ -14,7 +14,7 @@ This project provides a Model Control Protocol (MCP) server for interacting with
 ## Requirements
 
 - Python 3.13+
-- Palo Alto Networks firewall or Panorama
+- Palo Alto Networks firewall
 - API access to your PAN-OS device
 
 ## Installation
@@ -49,7 +49,6 @@ Edit the `pan-os.py` file to configure your PAN-OS device:
 # -----------------------------------------------------------------------------
 PA_HOST = "your-firewall-ip"
 PA_API_KEY = "your-api-key"  
-USER_AGENT = "MyAsyncClient/1.0"
 ```
 
 ## Usage
