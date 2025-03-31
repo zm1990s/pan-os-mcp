@@ -22,26 +22,31 @@ This project provides a Model Control Protocol (MCP) server for interacting with
 1. Clone the repository:
    ```bash
    git clone https://github.com/edoscars/pan-os-mcp.git
-   cd pan-os-mcp
    ```
 
-2. Create and activate a virtual environment:
-   ```bash
-   python -m venv .venv
-   # On Windows
-   .\.venv\Scripts\activate
-   # On Linux/Mac
-   source .venv/bin/activate
-   ```
-
-3. Install the dependencies:
+2. Install the dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-## Configuration
+3. Add to your Claude Desktop configuration (add the correct path in the args):
+   ```bash
+   {
+     "mcpServers": {
+       "pan-os":{
+         "command": "uv",
+         "args":[
+           "--directory",
+           "C:\\Users\\USER\\pan-os",
+           "run",
+           "pan-os.py"
+         ]
+       }
+     }
+   }
+   ```
 
-Edit the `pan-os.py` file to configure your PAN-OS device:
+4. Edit the `pan-os.py` file to configure your PAN-OS device:
 
 ```python
 # -----------------------------------------------------------------------------
@@ -50,10 +55,6 @@ Edit the `pan-os.py` file to configure your PAN-OS device:
 PA_HOST = "your-firewall-ip"
 PA_API_KEY = "your-api-key"  
 ```
-
-## Usage
-
-1. Connect with an MCP client (like Claude) and start interacting with your PAN-OS device.
 
 ## Available Commands
 
