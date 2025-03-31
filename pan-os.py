@@ -8,8 +8,8 @@ import mcp
 # -----------------------------------------------------------------------------
 # Pan-OS / Panorama Configuration (adjust to your environment)
 # -----------------------------------------------------------------------------
-PA_HOST = "192.168.188.101"
-PA_API_KEY = "LUFRPT1jS1JuckhGQXlORGVZVkthbjRsamdGS29PV009ci84WmxzU2E4RzN6QVZvZDZNM01hQ3IyVXNhZGF6ODl0ZnRQMWpRZnlXdUlROWZ3YmFGVlBDZVhEZjlkKzVuNQ=="  
+PA_HOST = ""
+PA_API_KEY = ""  
 USER_AGENT = "MyAsyncClient/1.0"
 
 mcp = FastMCP("pan-os")
