@@ -53,12 +53,7 @@ PA_API_KEY = "your-api-key"
 
 ## Usage
 
-1. Start the MCP server:
-   ```bash
-   python pan-os.py
-   ```
-
-2. Connect with an MCP client (like Claude) and start interacting with your PAN-OS device.
+1. Connect with an MCP client (like Claude) and start interacting with your PAN-OS device.
 
 ## Available Commands
 
