@@ -8,8 +8,7 @@ import mcp
 # -----------------------------------------------------------------------------
 # Pan-OS / Panorama Configuration (adjust to your environment)
 # -----------------------------------------------------------------------------
-PA_HOST = ""
-PA_API_KEY = ""  
+# Removed PA_HOST and PA_API_KEY environment variables
 USER_AGENT = "MyAsyncClient/1.0"
 
 mcp = FastMCP("pan-os")
@@ -44,6 +43,8 @@ def xml_to_dict(elem: ET.Element) -> dict[str, Any]:
 async def panos_xml_api_request(
     api_type: str,
     *,
+    host: str,
+    api_key: str,
     action: Optional[str] = None,
     extra_params: Optional[dict[str, Any]] = None,
     method: str = "GET",
@@ -51,9 +52,10 @@ async def panos_xml_api_request(
 ) -> dict[str, Any]:
     """
     Send a request to the PAN-OS XML API and parse the response into a dict.
-
-    :param api_type: e.g. "keygen", "config", "commit", "op", "log", "report", 
+    :param api_type: e.g. "keygen", "config", "commit", "op", "report", 
                      "import", "export", "user-id", "version", etc.
+    :param host: The hostname or IP address of the PAN-OS device
+    :param api_key: The API key to authenticate with the PAN-OS device
     :param action: e.g. "set", "show", "delete", "move", "partial", "all", ...
     :param extra_params: Additional query params dict
     :param method: "GET" or "POST"
@@ -69,7 +71,7 @@ async def panos_xml_api_request(
     # Base query parameters
     query_params = {
         "type": api_type,
-        "key": PA_API_KEY,
+        "key": api_key,
     }
 
     # If there's an action, include it
@@ -83,7 +85,7 @@ async def panos_xml_api_request(
     # We'll let the caller decide if it's "cmd" or "element" by passing an extra_params if needed,
     # or we can guess here based on the request type:
     if xml_body:
-        if api_type in ("op", "commit", "user-id", "report", "log", "version"):
+        if api_type in ("op", "commit", "user-id", "report", "version"):
             # Typically these use cmd= for the raw XML
             query_params["cmd"] = xml_body
         elif api_type == "config":
@@ -100,7 +102,7 @@ async def panos_xml_api_request(
         query_params[k] = v
 
     # Do the HTTP request
-    url = f"https://{PA_HOST}/api/"
+    url = f"https://{host}/api/"
     headers = {"User-Agent": USER_AGENT}
     verify_tls = False  # set True in production
 
@@ -169,10 +171,13 @@ def format_result(xml_text: str) -> dict[str, Any]:
 # -----------------------------------------------------------------------------
 # Async function to make a PAN-OS XML API request
 # -----------------------------------------------------------------------------
-async def make_panos_xml_request(cmd: str) -> Optional[dict[str, Any]]:
+async def make_panos_xml_request(cmd: str, host: str, api_key: str) -> Optional[dict[str, Any]]:
     """
     Make a request to the PAN-OS XML API, expecting an XML response.
     Returns a nested dict representation of the XML on success, or None on error.
+    :param cmd: The XML command to execute
+    :param host: The hostname or IP address of the PAN-OS device
+    :param api_key: The API key to authenticate with the PAN-OS device
     """
     headers = {
         "User-Agent": USER_AGENT,
@@ -182,7 +187,7 @@ async def make_panos_xml_request(cmd: str) -> Optional[dict[str, Any]]:
     params = {
         "type": "op",
         "cmd": cmd,
-        "key": PA_API_KEY
+        "key": api_key
     }
 
     # If using a self-signed cert in a test environment, set verify=False.
@@ -190,7 +195,7 @@ async def make_panos_xml_request(cmd: str) -> Optional[dict[str, Any]]:
     async with httpx.AsyncClient(verify=False) as client:
         try:
             response = await client.get(
-                f"https://{PA_HOST}/api/",
+                f"https://{host}/api/",
                 headers=headers,
                 params=params,
                 timeout=30.0
@@ -207,36 +212,45 @@ async def make_panos_xml_request(cmd: str) -> Optional[dict[str, Any]]:
 # Adding more tools like this can improve the performance since we are explaining in details how to use the API
 # -----------------------------------------------------------------------------
 @mcp.tool()
-async def get_system_info() -> dict[str, Any]:
+async def get_system_info(host: str, api_key: str) -> dict[str, Any]:
     """
     Example MCP tool function that retrieves basic system info
     from a PAN-OS device using the XML API.
+    :param host: The hostname or IP address of the PAN-OS device
+    :param api_key: The API key to authenticate with the PAN-OS device
     """
     # The <show><system><info></info></system></show> command is like "show system info"
     cmd_xml = "<show><system><info></info></system></show>"
-    data = await make_panos_xml_request(cmd_xml)
+    data = await make_panos_xml_request(cmd_xml, host, api_key)
     if not data:
         return {"error": "Failed to retrieve system info."}
     return data
 
 @mcp.tool()
-async def op_command(xml_cmd: str) -> dict[str, Any]:
+async def op_command(xml_cmd: str, host: str, api_key: str) -> dict[str, Any]:
     """
     Executes an arbitrary operational command (e.g. <show><system><info></info></system></show>)
     or 
     <request><restart><system></system></restart></request>
+    :param xml_cmd: The XML command to execute
+    :param host: The hostname or IP address of the PAN-OS device
+    :param api_key: The API key to authenticate with the PAN-OS device
     """
     return await panos_xml_api_request(
         api_type="op",
+        host=host,
+        api_key=api_key,
         xml_body=xml_cmd,
         method="POST"
     )
 
 @mcp.tool()
-async def commit_config(force: bool = False, partial_xml: Optional[str] = None) -> dict[str, Any]:
+async def commit_config(host: str, api_key: str, force: bool = False, partial_xml: Optional[str] = None) -> dict[str, Any]:
     """
     Commit the candidate config on the firewall. 
     Optionally handle force commits or partial commits (by providing partial_xml).
+    :param host: The hostname or IP address of the PAN-OS device
+    :param api_key: The API key to authenticate with the PAN-OS device
     :param force: If True, commits with <force></force>
     :param partial_xml: e.g. <partial><admin><member>bob</member></admin></partial>
     """
@@ -252,17 +266,21 @@ async def commit_config(force: bool = False, partial_xml: Optional[str] = None) 
     # type=commit => pass the commit XML in cmd=
     return await panos_xml_api_request(
         api_type="commit",
+        host=host,
+        api_key=api_key,
         xml_body=commit_elt,
         method="POST"
     )
 
 
 @mcp.tool()
-async def commit_all_shared_policy(device_group: Optional[str] = None, validate_only: bool = False) -> dict[str, Any]:
+async def commit_all_shared_policy(host: str, api_key: str, device_group: Optional[str] = None, validate_only: bool = False) -> dict[str, Any]:
     """
     Commit (push) changes from Panorama to managed devices.
-    If 'validate_only' is True, no actual commit is performed (just validation).
-    If 'device_group' is provided, push only to that device-group.
+    :param host: The hostname or IP address of the PAN-OS device
+    :param api_key: The API key to authenticate with the PAN-OS device
+    :param device_group: If provided, push only to that device-group
+    :param validate_only: If True, no actual commit is performed (just validation).
     """
     # <commit-all><shared-policy>[<validate-only/>][<device-group><entry name="MyDG"/></device-group>]</shared-policy></commit-all>
     commit_all_xml = "<commit-all><shared-policy>"
@@ -277,6 +295,8 @@ async def commit_all_shared_policy(device_group: Optional[str] = None, validate_
 
     return await panos_xml_api_request(
         api_type="commit",
+        host=host,
+        api_key=api_key,
         action="all",
         xml_body=commit_all_xml,
         method="POST"
@@ -287,6 +307,8 @@ async def commit_all_shared_policy(device_group: Optional[str] = None, validate_
 async def config_action(
     action: str,
     xpath: str,
+    host: str,
+    api_key: str,
     element_xml: Optional[str] = None,
     newname: Optional[str] = None,
     from_path: Optional[str] = None,
@@ -299,6 +321,8 @@ async def config_action(
     :param action: e.g. "show", "get", "set", "edit", "delete", "rename",
                           "clone", "move", "override", "multi-move", ...
     :param xpath:  The target XPath, e.g. /config/devices/entry/vsys/entry/rulebase/security
+    :param host: The hostname or IP address of the PAN-OS device
+    :param api_key: The API key to authenticate with the PAN-OS device
     :param element_xml: XML snippet to set or edit (if any)
     :param newname: Used with rename or clone
     :param from_path: The source for clone
@@ -322,10 +346,82 @@ async def config_action(
 
     return await panos_xml_api_request(
         api_type="config",
+        host=host,
+        api_key=api_key,
         action=action,
         extra_params=extra_params,
         xml_body=element_xml,  # Will be placed under 'element=' by default
         method="POST"
+    )
+
+@mcp.tool()
+async def create_log_retrieval_job(
+    host: str, 
+    api_key: str,
+    log_type: str,
+    query: Optional[str] = None,
+    nlogs: int = 20,
+    skip: int = 0,
+    dir: str = "backward"
+) -> dict[str, Any]:
+    """
+    Create a log retrieval job. Log retrieval is an asynchronous operation.
+    This step initiates the log retrieval and returns a job ID.
+    
+    :param host: The hostname or IP address of the PAN-OS device
+    :param api_key: The API key to authenticate with the PAN-OS device
+    :param log_type: Log type - one of: traffic, threat, config, system, hipmatch, 
+                    globalprotect, wildfire, url, data, corr, corr-detail, 
+                    corr-categ, userid, auth, gtp, external, iptag, decryption
+    :param query: Log query filter, e.g. "(receive_time geq '2023/01/01 00:00:00')"
+    :param nlogs: Number of logs to retrieve (default 20, max 5000)
+    :param skip: Number of logs to skip (default 0)
+    :param dir: Log retrieval direction: "forward" or "backward" (default backward)
+    :return: Response containing the job ID for the log retrieval task
+    """
+    extra_params = {
+        "log-type": log_type,
+        "nlogs": nlogs,
+        "skip": skip,
+        "dir": dir,
+    }
+    
+    if query:
+        extra_params["query"] = query
+    
+    return await panos_xml_api_request(
+        api_type="log",
+        host=host,
+        api_key=api_key,
+        extra_params=extra_params,
+        method="POST"
+    )
+
+@mcp.tool()
+async def get_logs_by_job_id(
+    host: str,
+    api_key: str,
+    job_id: str
+) -> dict[str, Any]:
+    """
+    Fetch logs from a previously created log retrieval job.
+    
+    :param host: The hostname or IP address of the PAN-OS device
+    :param api_key: The API key to authenticate with the PAN-OS device
+    :param job_id: The job ID returned by the create_log_retrieval_job function
+    :return: The logs if the job is complete, or a job status if still in progress
+    """
+    extra_params = {
+        "action": "get",
+        "job-id": job_id
+    }
+    
+    return await panos_xml_api_request(
+        api_type="log",
+        host=host,
+        api_key=api_key,
+        extra_params=extra_params,
+        method="GET"
     )
 
 if __name__ == "__main__":
