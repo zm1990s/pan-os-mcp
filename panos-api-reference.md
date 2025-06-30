@@ -49,7 +49,7 @@ curl -X POST 'https://<firewall>/api?type=<type>&action=<action>&xpath=<xpath>&k
 #### 参数说明
 
 - **key**: API 密钥，用于认证
-- **type**: 请求类型，如 config, op, report, log, import, export, user-id, version
+- **type**: 请求类型，如 config, op, report, import, export, user-id, version
 - **action**: 操作类型，如 set, edit, delete, show, get 等（当 type=config 时使用）
 - **xpath**: XML 路径，指定要操作的配置节点
 - **cmd**: 当执行操作命令时使用的 XML 命令
@@ -63,7 +63,6 @@ curl -X POST 'https://<firewall>/api?type=<type>&action=<action>&xpath=<xpath>&k
 | type=commit | 提交配置 | `type=commit&cmd=<commit></commit>` |
 | type=op | 执行操作命令 | `type=op&cmd=<show><system><info></info></system></show>` |
 | type=report | 获取报告 | `type=report&reporttype=dynamic` |
-| type=log | 获取日志 | `type=log&log-type=traffic` |
 | type=import | 导入文件 | `type=import&category=certificate` |
 | type=export | 导出文件 | `type=export&category=tech-support` |
 | type=user-id | 更新用户 ID 映射 | `type=user-id` |
